@@ -29,10 +29,10 @@
 	<script src="javascripts/jquery-1.9.0.min.js" type="text/javascript"></script>
 	<script type="text/javascript">
         var papers_map = {
-                {% for k in papers %}
-                "{{ k }}": [{{ papers[k][0]}},"{{papers[k][1]}}"],
-                {% endfor %}
-            }
+			{% for k in papers %}
+			"{{ k }}": [{{ papers[k][0]}},"{{papers[k][1]}}","{{papers[k][2]}}"],
+			{% endfor %}
+		}
 		function upload_bib() {
 			var usr='{{user}}';
 			if (usr=='None'){
@@ -46,14 +46,9 @@
 			}
 			var spk1='{{config.Speaker1}}'
 			var spk2='{{config.Speaker2}}'
-			alert(usr);
-			alert(spk1);
-			alert(spk2);
 			if (usr!=spk1&&usr!=spk2){
 				alert("you are not allowed to do so since you are not speaker");
 				return;
-			}else{
-				alert(usr);
 			}
 			var bibtex=document.getElementById("tex").value;
 			var bibdes=document.getElementById("des").value;
@@ -62,11 +57,13 @@
 				.replace(/@(\w+)\s*\{([^,]*)/,"{\"$1\": \"$2\"");
 			var bibobj = JSON.parse(bibjson);
 			var paper_key=bibobj.author+". "+bibobj.title+". "+bibobj.journal+". "+bibobj.year+".";
+			paper_key=paper_key.replace(/[&\|\\\*^%$#@\-"]/g,""); // this is very important
             if(paper_key in papers_map){
 				alert("this paper had already been uploaded!");
 				return;
 			}
-			papers_map[paper_key]=[0,bibdes];
+			alert(paper_key);
+			papers_map[paper_key]=[0,bibdes,usr];
             // submit the data to server:
             $.ajax({
                 type: 'POST',
@@ -80,7 +77,6 @@
 					'usr': usr
                     }),
             });
-			
             // end of the submiting data
 			create_li(paper_key,0);
 		}
@@ -120,6 +116,11 @@
 					return;
 				}
 				if (document.getElementById("del").checked){
+					if(usr!=papers_map[pKey][2]){
+						alert("you are not allowed to do this since you are not the owner of the paper!");
+						return;
+					}
+					alert("I am here!");
 					delete papers_map[pKey];
 					$(this).parent().remove();
 					opr='del';
@@ -129,6 +130,7 @@
 					$(this).next().text("vote("+papers_map[pKey][0]+").");
 					opr='vot'
 				}else if(document.getElementById("can").checked){
+					
 					if(papers_map[pKey][0]>0){
 						papers_map[pKey][0]=papers_map[pKey][0]-1;
 						$(this).next().text("vote("+papers_map[pKey][0]+").");

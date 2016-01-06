@@ -30,6 +30,7 @@ class Paper(ndb.Model):
     bibtex = ndb.StringProperty(indexed=False)
     descri = ndb.StringProperty(indexed=False)
     owner=ndb.StringProperty(indexed=False)
+    vote_emails=ndb.StringProperty(repeated=True)
     vote=ndb.IntegerProperty(indexed=False)
     date = ndb.DateTimeProperty(auto_now_add=True)
 
@@ -60,7 +61,7 @@ class MainPage(webapp2.RequestHandler):
 
             for paper in papers:
                 key=paper.key.id()
-                DEFAULT_PAPER_LIST[key]=[int(paper.vote),paper.descri,paper.owner]
+                DEFAULT_PAPER_LIST[key]=[int(paper.vote),paper.descri,paper.owner,list(paper.vote_emails)]
 
             # endfor
 
@@ -88,11 +89,10 @@ class Paperlist(webapp2.RequestHandler):
         bibkey=data['bibkey']
         bibdes=data['descri']
         usr=data['usr']
-
         paper=Paper(bibtex=bibtex,descri=bibdes,vote=0,id=bibkey)
         paper.put()
 
-        DEFAULT_PAPER_LIST[bibkey]=[0,bibdes]
+        DEFAULT_PAPER_LIST[bibkey]=[0,bibdes,usr,[]]
 
 class Operation(webapp2.RequestHandler):
 
