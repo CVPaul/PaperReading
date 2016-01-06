@@ -34,6 +34,16 @@
                 {% endfor %}
             }
 		function upload_bib() {
+			var usr='{{user}}';
+			if (usr=='None'){
+				alert("you are not allowed to do so since you have not login");
+				return;
+			}
+			var cfg='{{config}}';
+			if (cfg=='None'){
+				alert("please config at http://hostname/config first");
+				return;
+			}
 			var bibtex=document.getElementById("tex").value;
 			var bibdes=document.getElementById("des").value;
 			var bibjson = bibtex.replace(/(\w+)\s*=\s*\{/g,"\"$1\": \"")
@@ -70,6 +80,11 @@
 			obj.checked=true;
 		}
         function load_list(){
+			var cfg='{{config}}';
+			if (cfg=='None'){
+				alert("please config at http://hostname/config first");
+				return;
+			}
             for (paper_key in papers_map){
                 create_li(paper_key,papers_map[paper_key][0]);
             }
@@ -80,12 +95,16 @@
 			$("#paper-list").append(paper);
 			$("#paper-list li a").unbind().click(function(){
 				//remove <li> element with .remove(),which will refresh the page automatically
-				var islogin='{{LOGGING}}';
-				alert(islogin);
 				var pKey=$(this).text();
 				var opr=''
-				if (islogin=='out'){
+				var usr='{{user}}';
+				if (usr=='None'){
 					alert("you are not allowed to do so since you have not login");
+					return;
+				}
+				var cfg='{{config}}';
+				if (cfg=='None'){
+					alert("please config at http://hostname/config first");
 					return;
 				}
 				if (document.getElementById("del").checked){

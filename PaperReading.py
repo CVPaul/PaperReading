@@ -21,9 +21,8 @@ HOSTNAME = app_identity.app_identity.get_default_version_hostname()
 DEFAULT_PAPER_LIST=dict()
 DEFAULT_COUNT=10
 DEFAULT_LIST='default_list'
-LOGGING="out"
 
-config_dict=dict()
+config=None
 GLOBAL_CONFIG="global_config"
 
 class Paper(ndb.Model):
@@ -49,12 +48,9 @@ class MainPage(webapp2.RequestHandler):
         if user:
             url = users.create_logout_url(self.request.uri)
             url_linktext = 'Logout'
-            LOGGING="in"
         else:
             url = users.create_login_url(self.request.uri)
             url_linktext = 'Login'
-            LOGGING="out"
-        logging.info(user.nickname())
 
         if not DEFAULT_PAPER_LIST:
             
@@ -73,7 +69,6 @@ class MainPage(webapp2.RequestHandler):
         template_values = {
             'user': user,
             'config': config,
-            'LOGGING': LOGGING,
             'url': url,
             'url_linktext':url_linktext,
             'papers': DEFAULT_PAPER_LIST,
