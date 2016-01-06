@@ -29,6 +29,7 @@ class Paper(ndb.Model):
     """A main model for representing an individual Paperlist entry."""
     bibtex = ndb.StringProperty(indexed=False)
     descri = ndb.StringProperty(indexed=False)
+    owner=ndb.StringProperty(indexed=False)
     vote=ndb.IntegerProperty(indexed=False)
     date = ndb.DateTimeProperty(auto_now_add=True)
 
@@ -59,13 +60,12 @@ class MainPage(webapp2.RequestHandler):
 
             for paper in papers:
                 key=paper.key.id()
-                DEFAULT_PAPER_LIST[key]=[int(paper.vote),paper.descri]
+                DEFAULT_PAPER_LIST[key]=[int(paper.vote),paper.descri,paper.owner]
 
             # endfor
 
         #endif
-        config_query = config_param.query().order(-config_param.date)
-        config=config_query.fetch(1) # get the latest
+        config=config_key().get() # get the latest
         template_values = {
             'user': user,
             'config': config,
@@ -87,6 +87,7 @@ class Paperlist(webapp2.RequestHandler):
         bibtex=data['bibtex']
         bibkey=data['bibkey']
         bibdes=data['descri']
+        usr=data['usr']
 
         paper=Paper(bibtex=bibtex,descri=bibdes,vote=0,id=bibkey)
         paper.put()
@@ -102,6 +103,8 @@ class Operation(webapp2.RequestHandler):
             return
         key_text=data['bibkey']
         opr=data['operator']
+        usr=data['usr']
+
         key=ndb.Key('Paper',key_text)
         if opr=='del':
             DEFAULT_PAPER_LIST.pop(key_text)
@@ -135,10 +138,12 @@ class Config(webapp2.RequestHandler):
         key=config_key()
         cfg=key.get()
         if not cfg:
-            cfg=config_param()
-        cfg.max_vote=max_vote
-        cfg.Speaker1=speaker1
-        cfg.Speaker2=speaker2
+            cfg=config_param(max_vote=max_vote,Speaker1=speaker1,Speaker2=speaker2,id=GLOBAL_CONFIG)
+        else:
+            cfg.max_vote=max_vote
+            cfg.Speaker1=speaker1
+            cfg.Speaker2=speaker2
+
         cfg.put()
 
         query_params = {'default_list': DEFAULT_LIST}

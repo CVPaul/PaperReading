@@ -44,6 +44,17 @@
 				alert("please config at http://hostname/config first");
 				return;
 			}
+			var spk1='{{config.Speaker1}}'
+			var spk2='{{config.Speaker2}}'
+			alert(usr);
+			alert(spk1);
+			alert(spk2);
+			if (usr!=spk1&&usr!=spk2){
+				alert("you are not allowed to do so since you are not speaker");
+				return;
+			}else{
+				alert(usr);
+			}
 			var bibtex=document.getElementById("tex").value;
 			var bibdes=document.getElementById("des").value;
 			var bibjson = bibtex.replace(/(\w+)\s*=\s*\{/g,"\"$1\": \"")
@@ -65,7 +76,8 @@
                 data:JSON.stringify({
                     'bibtex': bibtex,
                     'bibkey': paper_key,
-					'descri': bibdes
+					'descri': bibdes,
+					'usr': usr
                     }),
             });
 			
@@ -133,7 +145,8 @@
 						dataType: 'json',
 						data:JSON.stringify({
 							'operator': opr,
-							'bibkey': pKey
+							'bibkey': pKey,
+							'usr': usr
 							}),
 					}); 
 				}
