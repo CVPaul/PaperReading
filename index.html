@@ -81,6 +81,7 @@
 			$("#paper-list li a").unbind().click(function(){
 				//remove <li> element with .remove(),which will refresh the page automatically
 				var islogin='{{LOGGING}}';
+				alert(islogin);
 				var pKey=$(this).text();
 				var opr=''
 				if (islogin=='out'){

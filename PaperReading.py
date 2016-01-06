@@ -23,8 +23,8 @@ DEFAULT_COUNT=10
 DEFAULT_LIST='default_list'
 LOGGING="out"
 
-config_files = '..\static\config.ini'
-config_dict=dict();
+config_dict=dict()
+GLOBAL_CONFIG="global_config"
 
 class Paper(ndb.Model):
     """A main model for representing an individual Paperlist entry."""
@@ -32,6 +32,15 @@ class Paper(ndb.Model):
     descri = ndb.StringProperty(indexed=False)
     vote=ndb.IntegerProperty(indexed=False)
     date = ndb.DateTimeProperty(auto_now_add=True)
+
+class config_param(ndb.Model):
+    max_vote=ndb.IntegerProperty()
+    Speaker1=ndb.StringProperty()
+    Speaker2=ndb.StringProperty()
+    date = ndb.DateTimeProperty(auto_now_add=True)
+
+def config_key():
+    return ndb.Key('config_param',GLOBAL_CONFIG)
 
 class MainPage(webapp2.RequestHandler):
 
@@ -45,6 +54,7 @@ class MainPage(webapp2.RequestHandler):
             url = users.create_login_url(self.request.uri)
             url_linktext = 'Login'
             LOGGING="out"
+        logging.info(user.nickname())
 
         if not DEFAULT_PAPER_LIST:
             
@@ -58,7 +68,11 @@ class MainPage(webapp2.RequestHandler):
             # endfor
 
         #endif
+        config_query = config_param.query().order(-config_param.date)
+        config=config_query.fetch(1) # get the latest
         template_values = {
+            'user': user,
+            'config': config,
             'LOGGING': LOGGING,
             'url': url,
             'url_linktext':url_linktext,
@@ -111,9 +125,33 @@ class Operation(webapp2.RequestHandler):
             DEFAULT_PAPER_LIST[key_text][0]=DEFAULT_PAPER_LIST[key_text][0]-1;
         else:
             return
+class Config(webapp2.RequestHandler):
+    
+    def get(self):
+        template = JINJA_ENVIRONMENT.get_template('config.html')
+        self.response.write(template.render())
 
+    def post(self):
+        max_vote=int(self.request.get('max_vote'))
+        speaker1=self.request.get('speaker1')
+        speaker2=self.request.get('speaker2')
+        
+        #update the config file
+        key=config_key()
+        cfg=key.get()
+        if not cfg:
+            cfg=config_param()
+        cfg.max_vote=max_vote
+        cfg.Speaker1=speaker1
+        cfg.Speaker2=speaker2
+        cfg.put()
+
+        query_params = {'default_list': DEFAULT_LIST}
+        self.redirect('/?' + urllib.urlencode(query_params))
+        
 app = webapp2.WSGIApplication([
     ('/', MainPage),
     ('/upload', Paperlist),
+    ('/config', Config),
     ('/operation',Operation)
 ], debug=True)
