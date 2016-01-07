@@ -19,6 +19,7 @@ APPID = app_identity.app_identity.get_application_id()
 HOSTNAME = app_identity.app_identity.get_default_version_hostname()
 
 DEFAULT_PAPER_LIST=dict()
+DEFAULT_USER_LIST=dict()
 DEFAULT_COUNT=10
 DEFAULT_LIST='default_list'
 
@@ -43,6 +44,13 @@ class config_param(ndb.Model):
 def config_key():
     return ndb.Key('config_param',GLOBAL_CONFIG)
 
+class User(ndb.Model):
+    count=ndb.IntegerProperty()
+
+def user_key(email):
+    return ndb.Key('User',email)
+
+
 class MainPage(webapp2.RequestHandler):
 
     def get(self):
@@ -55,7 +63,7 @@ class MainPage(webapp2.RequestHandler):
             url_linktext = 'Login'
 
         if not DEFAULT_PAPER_LIST:
-            
+            # start load the Paper List
             papers_query = Paper.query().order(-Paper.date)
             papers = papers_query.fetch(DEFAULT_COUNT)
 
@@ -63,7 +71,14 @@ class MainPage(webapp2.RequestHandler):
                 key=paper.key.id()
                 DEFAULT_PAPER_LIST[key]=[int(paper.vote),paper.descri,\
                         paper.owner,list(paper.vote_emails)]
-
+            # end of the paper list load 
+            # start of user list load
+            user_query = User.query()
+            user_list=user_query.fetch()
+            for usr in user_list:
+                uk=usr.key.id()
+                DEFAULT_USER_LIST[uk]=usr.count
+            #end of the user list load
             # endfor
 
         #endif
@@ -71,6 +86,7 @@ class MainPage(webapp2.RequestHandler):
         config=config_key().get() # get the latest
         template_values = {
             'user': user,
+            'user_list': json.dumps(DEFAULT_USER_LIST),
             'config': config,
             'url': url,
             'url_linktext':url_linktext,
@@ -109,9 +125,23 @@ class Operation(webapp2.RequestHandler):
 
         key=ndb.Key('Paper',key_text)
         if opr=='del':
+            for ems in DEFAULT_PAPER_LIST[key_text][3]:
+                DEFAULT_USER_LIST[ems]=DEFAULT_USER_LIST[ems]-1;
+                usr_ems=user_key(ems).get()
+                if not usr_ems or usr_ems.count==0:
+                    continue
+                usr_ems.count=usr_ems.count-1
+                usr_ems.put()
+
             DEFAULT_PAPER_LIST.pop(key_text)
             key.delete()
         elif opr=='vot':
+            usr_ems=user_key(usr).get()
+            if not usr_ems:
+                usr_ems=User(count=0,id=usr)
+            usr_ems.count=usr_ems.count+1
+            usr_ems.put()
+
             npaper=key.get()
             npaper.vote=npaper.vote+1
             npaper.vote_emails.append(usr)
@@ -119,6 +149,12 @@ class Operation(webapp2.RequestHandler):
             DEFAULT_PAPER_LIST[key_text][0]=DEFAULT_PAPER_LIST[key_text][0]+1
             DEFAULT_PAPER_LIST[key_text][3].append(usr)
         elif opr=='can':
+            usr_ems=user_key(usr).get()
+            if not usr_ems or usr_ems.count==0:
+                return
+            usr_ems.count=usr_ems.count-1
+            usr_ems.put()
+
             npaper=key.get()
             if npaper.vote<=0:
                 return

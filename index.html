@@ -28,6 +28,11 @@
 	</style>
 	<script src="javascripts/jquery-1.9.0.min.js" type="text/javascript"></script>
 	<script type="text/javascript">
+		var mvt=0;
+		{% if config %} 
+			mvt={{config.max_vote}} 
+		{% endif %} 
+		var user_list=JSON.parse('{{user_list|safe}}');
 		var papers_map=JSON.parse('{{papers|safe}}');
 		function upload_bib() {
 			var usr='{{user}}';
@@ -36,7 +41,7 @@
 				return;
 			}
 			var cfg='{{config}}';
-			if (cfg=='None'){
+			if (mvt==0){
 				alert("please config at http://hostname/config first");
 				return;
 			}
@@ -84,7 +89,7 @@
 		}
         function load_list(){
 			var cfg='{{config}}';
-			if (cfg=='None'){
+			if (mvt==0){
 				alert("please config at http://hostname/config first");
 				return;
 			}
@@ -105,8 +110,7 @@
 					alert("you are not allowed to do so since you have not login");
 					return;
 				}
-				var cfg='{{config}}';
-				if (cfg=='None'){
+				if (mvt==0){
 					alert("please config at http://hostname/config first");
 					return;
 				}
@@ -115,7 +119,9 @@
 						alert("you are not allowed to do this since you are not the owner of the paper!");
 						return;
 					}
-					alert("I am here!");
+					for (ems in papers_map[pKey][3]){
+						user_list[papers_map[pKey][3][ems]]=user_list[papers_map[pKey][3][ems]]-1;
+					}
 					delete papers_map[pKey];
 					$(this).parent().remove();
 					opr='del';
@@ -125,19 +131,39 @@
 						alert("your are not allowd to vote this paper twice");
 						return;
 					}
+					if(!(usr in user_list)){
+						user_list[usr]=0;
+					}else if(user_list[usr]>=mvt){
+						alert("you are not allowned to do so since max vote have reached!");
+						return;
+					}
+					user_list[usr]=user_list[usr]+1;
+					// split
 					papers_map[pKey][0]=papers_map[pKey][0]+1;
 					papers_map[pKey][3].push(usr);
-					alert(papers_map[pKey][3]);
 					$(this).next().text("vote("+papers_map[pKey][0]+").");
 					opr='vot'
 				}else if(document.getElementById("can").checked){
-					if($.inArray(usr,papers_map[pKey][3])<0){
+					var ind=$.inArray(usr,papers_map[pKey][3]);
+					if(ind<0){
 						alert("no vote no cancel!");
 						return;
 					}
+					if(!(usr in user_list)||user_list[usr]<=0){
+						return;
+					}
+					user_list[usr]=user_list[usr]-1;
+					// split
 					if(papers_map[pKey][0]>0){
 						papers_map[pKey][0]=papers_map[pKey][0]-1;
-						papers_map[pKey][3].slice($.inArray(usr,papers_map[pKey][3]),1);
+						alert("before");
+						alert(papers_map[pKey][3]);
+						if(papers_map[pKey][3].length==1){
+							papers_map[pKey][3].pop();
+						}else{
+							papers_map[pKey][3].splice(ind,1);
+						}
+						alert("after");
 						alert(papers_map[pKey][3]);
 						$(this).next().text("vote("+papers_map[pKey][0]+").");
 					};
