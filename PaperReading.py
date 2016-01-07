@@ -89,7 +89,7 @@ class Paperlist(webapp2.RequestHandler):
         bibkey=data['bibkey']
         bibdes=data['descri']
         usr=data['usr']
-        paper=Paper(bibtex=bibtex,descri=bibdes,vote=0,id=bibkey)
+        paper=Paper(bibtex=bibtex,descri=bibdes,owner=usr,vote_emails=[],vote=0,id=bibkey)
         paper.put()
 
         DEFAULT_PAPER_LIST[bibkey]=[0,bibdes,usr,[]]
