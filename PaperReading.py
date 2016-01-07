@@ -61,18 +61,20 @@ class MainPage(webapp2.RequestHandler):
 
             for paper in papers:
                 key=paper.key.id()
-                DEFAULT_PAPER_LIST[key]=[int(paper.vote),paper.descri,paper.owner,list(paper.vote_emails)]
+                DEFAULT_PAPER_LIST[key]=[int(paper.vote),paper.descri,\
+                        paper.owner,list(paper.vote_emails)]
 
             # endfor
 
         #endif
+        hw={'hello':'world'}
         config=config_key().get() # get the latest
         template_values = {
             'user': user,
             'config': config,
             'url': url,
             'url_linktext':url_linktext,
-            'papers': DEFAULT_PAPER_LIST,
+            'papers': json.dumps(DEFAULT_PAPER_LIST),
             'default_list': urllib.quote_plus(DEFAULT_LIST),
         }
 
@@ -112,15 +114,19 @@ class Operation(webapp2.RequestHandler):
         elif opr=='vot':
             npaper=key.get()
             npaper.vote=npaper.vote+1
+            npaper.vote_emails.append(usr)
             npaper.put();
-            DEFAULT_PAPER_LIST[key_text][0]=DEFAULT_PAPER_LIST[key_text][0]+1;
+            DEFAULT_PAPER_LIST[key_text][0]=DEFAULT_PAPER_LIST[key_text][0]+1
+            DEFAULT_PAPER_LIST[key_text][3].append(usr)
         elif opr=='can':
             npaper=key.get()
             if npaper.vote<=0:
                 return
             npaper.vote=npaper.vote-1
+            npaper.vote_emails.remove(usr)
             npaper.put()
-            DEFAULT_PAPER_LIST[key_text][0]=DEFAULT_PAPER_LIST[key_text][0]-1;
+            DEFAULT_PAPER_LIST[key_text][0]=DEFAULT_PAPER_LIST[key_text][0]-1
+            DEFAULT_PAPER_LIST[key_text][3].remove(usr)
         else:
             return
 class Config(webapp2.RequestHandler):

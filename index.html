@@ -28,11 +28,7 @@
 	</style>
 	<script src="javascripts/jquery-1.9.0.min.js" type="text/javascript"></script>
 	<script type="text/javascript">
-        var papers_map = {
-			{% for k in papers %}
-			"{{ k }}": [{{ papers[k][0]}},"{{papers[k][1]}}","{{papers[k][2]}}"],
-			{% endfor %}
-		}
+		var papers_map=JSON.parse('{{papers|safe}}');
 		function upload_bib() {
 			var usr='{{user}}';
 			if (usr=='None'){
@@ -62,8 +58,7 @@
 				alert("this paper had already been uploaded!");
 				return;
 			}
-			alert(paper_key);
-			papers_map[paper_key]=[0,bibdes,usr];
+			papers_map[paper_key]=[0,bibdes,usr,[]];
             // submit the data to server:
             $.ajax({
                 type: 'POST',
@@ -126,13 +121,24 @@
 					opr='del';
 				}
 				else if(document.getElementById("vot").checked){
+					if($.inArray(usr,papers_map[pKey][3])>=0){
+						alert("your are not allowd to vote this paper twice");
+						return;
+					}
 					papers_map[pKey][0]=papers_map[pKey][0]+1;
+					papers_map[pKey][3].push(usr);
+					alert(papers_map[pKey][3]);
 					$(this).next().text("vote("+papers_map[pKey][0]+").");
 					opr='vot'
 				}else if(document.getElementById("can").checked){
-					
+					if($.inArray(usr,papers_map[pKey][3])<0){
+						alert("no vote no cancel!");
+						return;
+					}
 					if(papers_map[pKey][0]>0){
 						papers_map[pKey][0]=papers_map[pKey][0]-1;
+						papers_map[pKey][3].slice($.inArray(usr,papers_map[pKey][3]),1);
+						alert(papers_map[pKey][3]);
 						$(this).next().text("vote("+papers_map[pKey][0]+").");
 					};
 					opr='can'
@@ -180,7 +186,6 @@
 				<section id="main-content">
 					<h2>
 					<a id="注意事项" class="anchor" href="#%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9" aria-hidden="true"><span class="octicon octicon-link"></span></a>注意事项</h2>
-
 					<ol id="caution-list">
 						<li>每次报告安排两位讲解人，原则上每人讲解两到三篇文章，具体情况视情况而定；</li>
 						<li>讲解人需要在每次讲解前一周的周一（下午组会之前），将候选的文章列表更新到此问题下，如果有特殊情况，可以适当后延。文章列表需要包含序号、完整的论文作者列表、文章题目、出处（包含发表年份）、讲解人对文章的简短总结，如果不是一年以内的文章，还应该包含引用量。总结应该大致介绍文章针对的问题、解决的思路，并可以适当地分析文章中方法的优缺点。文章列表的其他具体细节可以自行把握，建议每人每次文章列表不超过五篇；</li>
