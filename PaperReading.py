@@ -50,6 +50,11 @@ class User(ndb.Model):
 def user_key(email):
     return ndb.Key('User',email)
 
+def is_eng(text):
+    for ch in text:
+        if ord(ch)>127:
+            return False
+    return True
 
 class MainPage(webapp2.RequestHandler):
 
@@ -62,9 +67,13 @@ class MainPage(webapp2.RequestHandler):
             url = users.create_login_url(self.request.uri)
             url_linktext = 'Login'
 
+        config=config_key().get() # get the latest
         if not DEFAULT_PAPER_LIST:
             # start load the Paper List
-            papers_query = Paper.query().order(-Paper.date)
+            if config:
+                papers_query=Paper.query(Paper.date>config.date)
+            else:
+                papers_query = Paper.query().order(-Paper.date)
             papers = papers_query.fetch(DEFAULT_COUNT)
 
             for paper in papers:
@@ -82,8 +91,6 @@ class MainPage(webapp2.RequestHandler):
             # endfor
 
         #endif
-        hw={'hello':'world'}
-        config=config_key().get() # get the latest
         template_values = {
             'user': user,
             'user_list': json.dumps(DEFAULT_USER_LIST),
@@ -107,6 +114,14 @@ class Paperlist(webapp2.RequestHandler):
         bibkey=data['bibkey']
         bibdes=data['descri']
         usr=data['usr']
+
+        if not is_eng(bibtex):
+            bibtex="".join(bibtex.split())# json not allowed space in Chinese string
+        if not is_eng(bibkey):
+            bibkey="".join(bibkey.split())# json not allowed space in Chinese string
+        if not is_eng(bibdes):
+            bibdes="".join(bibdes.split())# json not allowed space in Chinese string
+        # here we do not deal with user name which have non ascii character (on 2016-01-08)
         paper=Paper(bibtex=bibtex,descri=bibdes,owner=usr,vote_emails=[],vote=0,id=bibkey)
         paper.put()
 
@@ -190,10 +205,47 @@ class Config(webapp2.RequestHandler):
 
         query_params = {'default_list': DEFAULT_LIST}
         self.redirect('/?' + urllib.urlencode(query_params))
+
+
+class Download(webapp2.RequestHandler):
+    ''' the useful example got from: http://stackoverflow.com/questions/20394025/how-to-download-several-files-with-gae-python
+    import webapp2, urllib
+    url1 = 'http://dummy/sample1.jpg'
+    url2 = 'http://dummy/sample2.jpg'
+
+class DownloadHandler(webapp2.RequestHandler):
+    def get(self):
+        #image1
+        self.response.headers['Content-Type'] = 'application/octet-stream'
+        self.response.headers['Content-Disposition'] = 'attachment; filename="' + 'sample1.jpg' + '"'
+        f = urllib.urlopen(url1)
+        data = f.read()
+        self.response.out.write(data)
+
+        #image2
+        self.response.headers['Content-Type'] = 'application/octet-stream'
+        self.response.headers['Content-Disposition'] = 'attachment; filename="' + 'sample2.jpg' + '"'
+        f = urllib.urlopen(url2)
+        data = f.read()
+        self.response.out.write(data)
+    '''
+    def get(self):
+        self.response.headers['Content-Type'] = 'application/octet-stream'
+        self.response.headers['Content-Disposition']='attachment; filename=%s'%('bibtex.bib')
         
+        papers_query = Paper.query().order(-Paper.date)
+        papers = papers_query.fetch()
+
+        data=""
+        for p in papers:
+            data=data+p.bibtex+'\n'
+        self.response.out.write(data)
+        
+
 app = webapp2.WSGIApplication([
     ('/', MainPage),
     ('/upload', Paperlist),
     ('/config', Config),
-    ('/operation',Operation)
+    ('/operation',Operation),
+    ('/download',Download)
 ], debug=True)

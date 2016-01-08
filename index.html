@@ -21,7 +21,7 @@
 			width: 300px;
 			height: 200px;
 			border: none;
-			background-color: #ffffee;
+			background-color: #fff;
 			display: none;
 			position: absolute;
 		}
@@ -54,15 +54,23 @@
 			
 			var bibtex=document.getElementById("tex").value;
 			var bibdes=document.getElementById("des").value;
+			document.getElementById("tex").value='';
+			document.getElementById("des").value='';
 			var bibjson = bibtex.replace(/(\w+)\s*=\s*\{/g,"\"$1\": \"")
 				.replace(/\}(?=\s*[,\}])/g,"\"")
 				.replace(/@(\w+)\s*\{([^,]*)/,"{\"$1\": \"$2\"")
 				.replace(/\{(\w*)\"+(\w*)\}/g,"$1$2")// deal with muilty {}
 				.replace(/[&\|\\\*^%$#@\-{}]/g,"")
 			bibjson="{"+bibjson+"}";
-			alert(bibjson);
 			var bibobj = JSON.parse(bibjson);
-			var paper_key=bibobj.author+". "+bibobj.title+". "+bibobj.journal+". "+bibobj.year+".";
+			var paper_key=bibobj.author+". "+bibobj.title+". ";
+			if (bibobj.journal!='undefined'){
+				paper_key=paper_key+bibobj.journal+". "+bibobj.year+".";
+			}else if(bibobj.booktitle!='undefined'){
+				paper_key=paper_key+bibobj.booktitle+". "+bibobj.year+".";
+			}else{
+				paper_key=paper_key+"undefined. "+bibobj.year+".";
+			}
 			paper_key=paper_key.replace(/[&\|\\\*^%$#@\-"{}]/g,""); // this is very important
             if(paper_key in papers_map){
 				alert("this paper had already been uploaded!");
@@ -129,6 +137,7 @@
 					}
 					delete papers_map[pKey];
 					$(this).parent().remove();
+					$("#descri").hide();
 					opr='del';
 				}
 				else if(document.getElementById("vot").checked){
@@ -238,14 +247,14 @@
 					</ol>
 				</section>
 				<aside id="sidebar">
-					<a href="#" class="button">
+					<a href="/download" class="button">
 						<small>Download</small>
 						.bib file
 					</a>
 					<a href="{{url|safe}}" class="upload">{{ url_linktext }}</a>
-					<textarea id="tex" cols="30" rows="10">bibtex here</textarea> 
+					<textarea id="tex" cols="30" rows="10" value='paste your bibtex here' onfocus="if (value =='paste your bibtex here'){value =''}" onblur="if (value ==''){value='paste your bibtex here'}" >paste your bibtex here</textarea> 
 					<a href="#%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9" class="upload" onclick="upload_bib()">Upload <small>(.bib & text)</small></a>
-					<textarea id="des" cols="30" rows="10">this paper is ....blablabla...</textarea>
+					<textarea id="des" cols="30" rows="10" value='say something about this' onfocus="if (value =='say something about this'){value =''}" onblur="if (value ==''){value='say something about this'}" >say something about this</textarea> 
 					<!--a href="#%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9" class="upload" onclick="save_json()">Save <small>( .* )</small></a-->
 					<p class="repo-owner"><a href="https://github.com/CVPaul/PaperReading"></a> is maintained by <a href="https://github.com/CVPaul">CVPaul</a>.</p>
 
