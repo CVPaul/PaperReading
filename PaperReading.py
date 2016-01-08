@@ -3,9 +3,10 @@ import urllib
 import logging
 import json
 
-from google.appengine.api import users
 from google.appengine.ext import ndb
 from google.appengine.api import app_identity
+
+import Authentication as Auth
 
 import jinja2
 import webapp2
@@ -44,11 +45,11 @@ class config_param(ndb.Model):
 def config_key():
     return ndb.Key('config_param',GLOBAL_CONFIG)
 
-class User(ndb.Model):
+class voteUser(ndb.Model):
     count=ndb.IntegerProperty()
 
 def user_key(email):
-    return ndb.Key('User',email)
+    return ndb.Key('voteUser',email)
 
 def is_eng(text):
     for ch in text:
@@ -56,16 +57,22 @@ def is_eng(text):
             return False
     return True
 
-class MainPage(webapp2.RequestHandler):
+class MainPage(Auth.BaseHandler):
 
     def get(self):
-        user = users.get_current_user()
+        u = self.user_info
+        if not self.user_info:
+            user=None
+        else:
+            model=self.user_model.get_by_id(u['user_id'])
+            user=model.email_address
+
         if user:
-            url = users.create_logout_url(self.request.uri)
+            url='logout'
             url_linktext = 'Logout'
         else:
-            url = users.create_login_url(self.request.uri)
-            url_linktext = 'Login'
+            url='login'
+            url_linktext = 'Login/Signup'
 
         config=config_key().get() # get the latest
         if not DEFAULT_PAPER_LIST:
@@ -82,7 +89,7 @@ class MainPage(webapp2.RequestHandler):
                         paper.owner,list(paper.vote_emails)]
             # end of the paper list load 
             # start of user list load
-            user_query = User.query()
+            user_query = voteUser.query()
             user_list=user_query.fetch()
             for usr in user_list:
                 uk=usr.key.id()
@@ -104,7 +111,7 @@ class MainPage(webapp2.RequestHandler):
         template = JINJA_ENVIRONMENT.get_template('index.html')
         self.response.write(template.render(template_values))
 
-class Paperlist(webapp2.RequestHandler):
+class Paperlist(Auth.BaseHandler):
 
     def post(self):
 
@@ -127,7 +134,7 @@ class Paperlist(webapp2.RequestHandler):
 
         DEFAULT_PAPER_LIST[bibkey]=[0,bibdes,usr,[]]
 
-class Operation(webapp2.RequestHandler):
+class Operation(Auth.BaseHandler):
 
     """this function is defined to process the deleting,voting and un-voting of a paper"""
     def post(self):
@@ -153,7 +160,7 @@ class Operation(webapp2.RequestHandler):
         elif opr=='vot':
             usr_ems=user_key(usr).get()
             if not usr_ems:
-                usr_ems=User(count=0,id=usr)
+                usr_ems=voteUser(count=0,id=usr)
             usr_ems.count=usr_ems.count+1
             usr_ems.put()
 
@@ -180,7 +187,7 @@ class Operation(webapp2.RequestHandler):
             DEFAULT_PAPER_LIST[key_text][3].remove(usr)
         else:
             return
-class Config(webapp2.RequestHandler):
+class Config(Auth.BaseHandler):
     
     def get(self):
         template = JINJA_ENVIRONMENT.get_template('config.html')
@@ -207,28 +214,8 @@ class Config(webapp2.RequestHandler):
         self.redirect('/?' + urllib.urlencode(query_params))
 
 
-class Download(webapp2.RequestHandler):
-    ''' the useful example got from: http://stackoverflow.com/questions/20394025/how-to-download-several-files-with-gae-python
-    import webapp2, urllib
-    url1 = 'http://dummy/sample1.jpg'
-    url2 = 'http://dummy/sample2.jpg'
+class Download(Auth.BaseHandler):
 
-class DownloadHandler(webapp2.RequestHandler):
-    def get(self):
-        #image1
-        self.response.headers['Content-Type'] = 'application/octet-stream'
-        self.response.headers['Content-Disposition'] = 'attachment; filename="' + 'sample1.jpg' + '"'
-        f = urllib.urlopen(url1)
-        data = f.read()
-        self.response.out.write(data)
-
-        #image2
-        self.response.headers['Content-Type'] = 'application/octet-stream'
-        self.response.headers['Content-Disposition'] = 'attachment; filename="' + 'sample2.jpg' + '"'
-        f = urllib.urlopen(url2)
-        data = f.read()
-        self.response.out.write(data)
-    '''
     def get(self):
         self.response.headers['Content-Type'] = 'application/octet-stream'
         self.response.headers['Content-Disposition']='attachment; filename=%s'%('bibtex.bib')
@@ -241,11 +228,26 @@ class DownloadHandler(webapp2.RequestHandler):
             data=data+p.bibtex+'\n'
         self.response.out.write(data)
         
-
+user_config = {
+  'webapp2_extras.auth': {
+    'user_model': 'models.User',
+    'user_attributes': ['name']
+  },
+  'webapp2_extras.sessions': {
+    'secret_key': 'YOUR_SECRET_KEY'
+  }
+}
 app = webapp2.WSGIApplication([
     ('/', MainPage),
     ('/upload', Paperlist),
     ('/config', Config),
     ('/operation',Operation),
-    ('/download',Download)
-], debug=True)
+    ('/download',Download),
+    ('/login',Auth.LoginHandler),
+    ('/forgot',Auth.ForgotPasswordHandler),
+    ('/signup',Auth.SignupHandler),
+    webapp2.Route('/<type:v|p>/<user_id:\d+>-<signup_token:.+>',
+      Auth.VerificationHandler, name='verification'),
+    ('/logout',Auth.LogoutHandler),
+    ('/setting',Auth.SetPasswordHandler)
+], debug=True,config=user_config)

@@ -6,14 +6,23 @@ threadsafe: true
 handlers:
 - url: /stylesheets
   static_dir: stylesheets
+
 - url: /images
   static_dir: images
+  
 - url: /assets
   static_dir: assets
+  
 - url: /javascripts
   static_dir: javascripts
+  
 - url: /.*
   script: PaperReading.app
+  
+- url: /login
+  script: .app
+  secure: always
+  
 
 libraries:
 - name: webapp2
