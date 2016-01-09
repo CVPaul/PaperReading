@@ -60,18 +60,18 @@
 				.replace(/\}(?=\s*[,\}])/g,"\"")
 				.replace(/@(\w+)\s*\{([^,]*)/,"{\"$1\": \"$2\"")
 				.replace(/\{(\w*)\"+(\w*)\}/g,"$1$2")// deal with muilty {}
-				.replace(/[&\|\\\*^%$#@\-{}]/g,"")
+				.replace(/[&\|\\\*^%$#@\-\{\}]/g,"")
 			bibjson="{"+bibjson+"}";
 			var bibobj = JSON.parse(bibjson);
 			var paper_key=bibobj.author+". "+bibobj.title+". ";
-			if (bibobj.journal!='undefined'){
+			if ('journal' in bibobj){
 				paper_key=paper_key+bibobj.journal+". "+bibobj.year+".";
-			}else if(bibobj.booktitle!='undefined'){
+			}else if ('booktitle' in bibobj){
 				paper_key=paper_key+bibobj.booktitle+". "+bibobj.year+".";
 			}else{
 				paper_key=paper_key+"undefined. "+bibobj.year+".";
 			}
-			paper_key=paper_key.replace(/[&\|\\\*^%$#@\-"{}]/g,""); // this is very important
+			paper_key=paper_key.replace(/[&\|\\\*^%$#@\-"\{\}]/g,""); // this is very important
             if(paper_key in papers_map){
 				alert("this paper had already been uploaded!");
 				return;
