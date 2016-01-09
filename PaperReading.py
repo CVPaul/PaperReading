@@ -65,7 +65,10 @@ class MainPage(Auth.BaseHandler):
             user=None
         else:
             model=self.user_model.get_by_id(u['user_id'])
-            user=model.email_address
+            if not model:
+                user=None
+            else:
+                user=model.email_address
 
         if user:
             url='logout'
