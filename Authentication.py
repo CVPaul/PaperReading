@@ -195,7 +195,7 @@ class SignupHandler(BaseHandler):
     verification_url = self.uri_for('verification', type='v', user_id=user_id,
       signup_token=token, _full=True)
 
-    msg = '点击链接确认：<a href="{url}">{url}</a>'
+    msg = 'click this link to confirm: <a href="{url}">{url}</a>'
 
     self.display_message(msg.format(url=verification_url))
 

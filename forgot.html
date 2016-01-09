@@ -30,7 +30,7 @@
 				<strong>查找失败!</strong>没有找到该用户名.
 			{% endif %} 
 			<form action= "/forgot" method="post">
-				<input type="text" value="{{ username }}" name="username" class="username"/>
+				<input type="text" value="{{ username }}" name="username" class="username" placeholder="用户名"/>
 				<button type="submit">提交</button>
 				<div class="error"><span>+</span></div>
 			</form>
